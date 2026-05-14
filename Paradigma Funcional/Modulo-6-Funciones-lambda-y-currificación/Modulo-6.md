@@ -122,4 +122,167 @@ También podemos saber cuántos hijos tienen los empleados en total:
 λ foldl (\total empleado -> total + cantidadHijos empleado) 0 empleados
 ```
 
-pag 6
+La expresión lambda sirve como *adapter* para sumar los valores que nosotros queremos, ya que la suma solo trabaja con enteros, no con un número y un empleado.
+
+![Fold con lambda](./img/foldl-lambda.png)
+
+Otra opción es utilizar foldr y trabajar con una función adapter ad-hoc:
+
+```haskell
+foldr ((+).sueldo) 0 empleados
+32000.0
+```
+
+O utilizar una expresión lambda
+
+```haskell
+foldr (\empleado total -> total + suelod empleado) 0.0 empleados
+```
+
+### Currificación
+
+Volviendo al ejemplo
+
+```haskell
+map (\(a,b) -> a + b)[(1, 2), (3, 5), (6, 3), (2, 6), (2, 5)]
+```
+
+La expresión lambda es la suma pero aplicado a una tupla de 2 elementos:
+
+```haskell
+\(a,b) -> a + b
+```
+
+mientras que el operador (+) trabaja con dos argumentos
+
+```haskell
+\a b -> a + b
+```
+
+(1) En la primera solución, no podemos trabajar con aplicación parcial. Entonces decimos que la función está sin *currificar*.
+
+```haskell
+λ (\(a, b) -> a + b) (5, 3)
+8
+λ (\(a, b) -> a + b) (5)
+¡Error!
+```
+
+(2) En la segunda sí podemos aplicar parcialmente la suma, y decimos que la función está *currificada*
+
+```haskell
+λ (\ a b -> a + b) 5
+<function>
+```
+
+En general, una función
+
+```haskell
+f :: a -> b -> c
+```
+
+es la forma *currificada* de la función que tiene un solo argumento (una tupla):
+
+```haskell
+g :: (a,b) -> c
+```
+
+*g* es una función *sin currificar*
+
+Podes intercambiar ambas funciones con la funciones `curry` y `uncurry`
+
+```haskell
+f = curry g
+g = uncurry f
+
+f x y = g (x,y)
+```
+
+#### Cómo la currificación permite la aplicación parcial
+
+Si recordamos la función (*) recibe dos argumentos y devuelve un número
+
+```haskell
+(*) :: Num a => a -> a -> a
+```
+
+La realidad es que Haskell considera que (*) es una función que recibe un número y devuelve una función, que termina multiplicando por ese número:
+
+```haskell
+(*) :: Num a => a -> (a -> a)
+```
+
+Es decir que la reducción se hace:
+
+```haskell
+(2 *) 3
+```
+
+Asociando a derecha, así puedo armar una función aplicando parcialmente sus argumentos:
+
+Si el tipo de (*) es
+`Numero -> (Numero -> Numero)`
+El tipo de (2*) es
+`Numero -> Numero`
+o sea que (2 *) me devuelve una función
+
+#### Suma  de números
+
+¿Cómo describimos la suma de dos números?
+
+```haskell
+(\x y -> x + y)
+```
+
+Se desarrolló el calculo lambda proponiendo que todas las funciones sean de un solo parámetro, por lo tanto la función suma también puede escribirse así:
+
+```haskell
+\x -> (\y -> x + y)
+```
+
+Entonces la sumatoria de dos números empieza a verse como una función que recibe un número y devuelve una función. Esto permite que yo pueda aplicarla parcialmente.
+
+```haskell
+λ (\x -> (\y -> x + y)) 1 =
+(\y -> 1 + y)
+```
+
+#### Con qué letra empieza una palabra
+
+Queremos saber si una palabra empieza con una letra determinada.
+
+```haskell
+type Palabra = String
+
+empiezaCon :: Char -> Palabra -> Bool
+empiezaCon letra palabra = ((== letra) . head) palabra
+```
+
+Ahora traducimos la función `empiezaCon` a expresiones lambdas
+
+```haskell
+(\letra -> (\palabra -> ((== letra) . head) palabra))
+```
+
+Si la letra es un valor conocido, por ejemplo la letra 'a'
+
+```haskell
+λ (\letra -> (\palabra -> ((== letra) . head) palabra)) 'a'
+
+(\palabra -> ((== 'a') . head) palabra)
+
+```
+
+Me da una función que me dice si una palabra empieza con a
+
+Por el contrario si hacemos:
+
+```haskell
+λ (\letra -> (\palabra -> ((== letra) . head) palabra)) 'r' "rosa"
+
+λ ((== 'r') . head) "rosa"
+True
+
+```
+
+Lo que obtenemos es True porque se reemplaza letra por r y palabra por rosa.
